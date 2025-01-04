@@ -18,6 +18,8 @@ impl Api {
 async fn main() -> Result<(), std::io::Error> {
     let api_service =
         OpenApiService::new(Api, "Hello World", "1.0").server("http://localhost:3000/api");
+    let json = api_service.spec();
+    std::fs::write("openapi.json", json).unwrap();
     let ui = api_service.swagger_ui();
     let app = Route::new().nest("/api", api_service).nest("/", ui);
 
