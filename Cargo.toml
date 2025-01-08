@@ -7,3 +7,4 @@ edition = "2021"
 poem = "3.1.5"
 poem-openapi = { version = "5.1.5", features = ["swagger-ui"] }
 tokio = { version = "1.42.0", features = ["full"] }
+sqlite = "0.31.0"
