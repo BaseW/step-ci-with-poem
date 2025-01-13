@@ -14,5 +14,58 @@ tests:
             name: aliquip dolor
           check:
             status: 200
+  openapi_schema:
+    name: OpenAPI Schema Validation
+    steps:
+      - check:
+          schema:
+            $ref: openapi.json
+  create_todo:
+    name: Create Todo
+    steps:
+      - http:
+          url: /todo
+          method: POST
+          headers:
+            Content-Type: text/plain
+          body: "Buy milk"
+          check:
+            status: 200
+  read_todos:
+    name: Read Todos
+    steps:
+      - http:
+          url: /todo
+          method: POST
+          headers:
+            Content-Type: text/plain
+          body: "Buy milk"
+          check:
+            status: 200
+      - http:
+          url: /todos
+          method: GET
+          check:
+            status: 200
+            jsonpath:
+              '$[0].text': "Buy milk"
+  complete_todo:
+    name: Complete Todo
+    steps:
+      - http:
+          url: /todo
+          method: POST
+          headers:
+            Content-Type: text/plain
+          body: "Another todo"
+          check:
+            status: 200
+          captures:
+            create_todo_id: response
+      - http:
+          url: /todo/${{create_todo_id}}/complete
+          method: POST
+          check:
+            status: 200
 components:
   schemas: {}
