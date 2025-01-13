@@ -1,8 +1,27 @@
 use poem::{listener::TcpListener, Route};
-use poem_openapi::{param::Query, payload::Json, payload::PlainText, OpenApi, OpenApiService};
+use poem_openapi::{
+    param::Path,
+    param::Query,
+    payload::{Json, PlainText},
+    OpenApi, OpenApiService,
+};
+use serde::{Deserialize, Serialize};
 use sqlite::Connection;
 
+#[derive(poem_openapi::Object, Serialize, Deserialize)]
+struct Todo {
+    id: i64,
+    text: String,
+    completed: bool,
+}
+
 struct Api;
+
+impl Api {
+    fn new() -> Self {
+        Self
+    }
+}
 
 #[OpenApi]
 impl Api {
@@ -24,16 +43,16 @@ impl Api {
     }
 
     #[oai(path = "/todos", method = "get")]
-    async fn list_todos_api(&self) -> Json<Vec<(i64, String, bool)>> {
+    async fn list_todos_api(&self) -> Json<Vec<Todo>> {
         let conn = init_db().expect("Failed to open database");
         let todos = list_todos(&conn).unwrap_or_default();
         Json(todos)
     }
 
     #[oai(path = "/todo/:id/complete", method = "post")]
-    async fn complete_todo_api(&self, id: i64) -> PlainText<String> {
+    async fn complete_todo_api(&self, id: Path<i64>) -> PlainText<String> {
         let conn = init_db().expect("Failed to open database");
-        match complete_todo(&conn, id) {
+        match complete_todo(&conn, id.0) {
             Ok(_) => PlainText("Todo completed successfully".to_string()),
             Err(e) => PlainText(format!("Error completing todo: {}", e)),
         }
@@ -59,14 +78,18 @@ fn add_todo(conn: &Connection, text: &str) -> Result<(), sqlite::Error> {
     Ok(())
 }
 
-fn list_todos(conn: &Connection) -> Result<Vec<(i64, String, bool)>, sqlite::Error> {
+fn list_todos(conn: &Connection) -> Result<Vec<Todo>, sqlite::Error> {
     let mut statement = conn.prepare("SELECT id, text, completed FROM todos")?;
     let mut todos = Vec::new();
     while let Ok(sqlite::State::Row) = statement.next() {
         let id: i64 = statement.read(0)?;
         let text: String = statement.read(1)?;
         let completed: i64 = statement.read(2)?;
-        todos.push((id, text, completed != 0));
+        todos.push(Todo {
+            id,
+            text,
+            completed: completed != 0,
+        });
     }
     Ok(todos)
 }
